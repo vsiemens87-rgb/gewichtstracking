@@ -551,3 +551,12 @@ footer.app-footer {
 .toast.show {
   transform: translateX(-50%) translateY(0);
 }
+
+
+.alert-ok {
+  border-color: rgba(110, 180, 130, 0.45);
+  background: rgba(110, 180, 130, 0.12);
+}
+.alert-ok strong {
+  color: #9fd4a8;
+}

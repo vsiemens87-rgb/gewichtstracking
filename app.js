@@ -337,6 +337,33 @@
     return best;
   }
 
+
+  /**
+   * After mute ends: gentle reminder for ~3 days that trend is reliable again.
+   * @returns {{ entry: Entry, eventDay: string, reliableFrom: string, daysSince: number }|null}
+   */
+  function recentEventRecoveredInfo(entries, asOfKey, muteDays) {
+    const asOf = parseDateKey(asOfKey);
+    const n = clampMuteDays(muteDays);
+    const remindDays = 3;
+    /** @type {{ entry: Entry, eventDay: string, reliableFrom: string, daysSince: number }|null} */
+    let best = null;
+    for (const e of entries) {
+      if (!entryHasEvent(e)) continue;
+      const eventDay = e.datetime.slice(0, 10);
+      const daysSince =
+        (asOf - parseDateKey(eventDay)) / (1000 * 60 * 60 * 24);
+      if (daysSince < n) continue; // still muted
+      if (daysSince >= n + remindDays) continue; // reminder window over
+      const reliableFrom = toDateKey(addDays(parseDateKey(eventDay), n));
+      const cand = { entry: e, eventDay, reliableFrom, daysSince };
+      if (!best || eventDay > best.eventDay || (eventDay === best.eventDay && e.datetime > best.entry.datetime)) {
+        best = cand;
+      }
+    }
+    return best;
+  }
+
   // —— UI helpers ——
 
   function $(id) {
@@ -385,6 +412,13 @@
           (evLabel ? " (" + evLabel + ")" : "") +
           " — Trend erst ab " + formatDeDate(mute.reliableFrom).slice(0, 6) + " wieder belastbar"
       );
+    } else {
+      const recovered = recentEventRecoveredInfo(state.entries, asOf, s.eventMuteDays);
+      if (recovered) {
+        lines.push(
+          "Trend wieder belastbar seit " + formatDeDate(recovered.reliableFrom).slice(0, 6)
+        );
+      }
     }
     return lines.join("\n");
   }
@@ -537,9 +571,11 @@
     // Soft alert (nur Cut; nach Ereignis im Mute-Fenster stumm)
     const alert = softAlertInfo(daily);
     const alertBox = $("softAlert");
+    const readyBox = $("trendReady");
     const lastPhase = last ? last.phase : s.defaultPhase;
     const inCut = s.defaultPhase === "Cut" && lastPhase !== "Aufbau";
     const muteInfo = recentEventMuteInfo(state.entries, asOf, s.eventMuteDays);
+    const recoveredInfo = recentEventRecoveredInfo(state.entries, asOf, s.eventMuteDays);
     const mutedByEvent = !!muteInfo;
     if (alert.show && inCut && !mutedByEvent) {
       alertBox.hidden = false;
@@ -553,6 +589,18 @@
       alertBox.hidden = true;
     }
 
+    // Nach Mute-Ende: sanft erinnern (ca. 3 Tage), nicht zusammen mit Soft-Alert
+    if (readyBox) {
+      if (recoveredInfo && !mutedByEvent && alertBox.hidden) {
+        readyBox.hidden = false;
+        const rd = formatDeDate(recoveredInfo.reliableFrom).slice(0, 6);
+        $("trendReadyText").textContent =
+          "Trend wieder belastbar (seit " + rd + "). Du kannst Entscheidungen wieder am 7-Tage-Mittel festmachen — ruhig bleiben.";
+      } else {
+        readyBox.hidden = true;
+      }
+    }
+
     // Digest: Ereignis-Hinweis
     const digestEventRow = $("digestEventRow");
     const digestEvent = $("digestEvent");
@@ -563,6 +611,11 @@
       digestEvent.textContent =
         "Ereignis am " + dd + " — Trend erst ab " + rd + " wieder belastbar";
       digestEvent.className = "d-value warn";
+    } else if (recoveredInfo) {
+      digestEventRow.hidden = false;
+      const rd = formatDeDate(recoveredInfo.reliableFrom).slice(0, 6);
+      digestEvent.textContent = "Trend wieder belastbar seit " + rd;
+      digestEvent.className = "d-value ok";
     } else {
       digestEventRow.hidden = true;
       digestEvent.textContent = "—";
