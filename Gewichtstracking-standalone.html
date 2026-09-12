@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>Gewichtstracking – Valentin</title>
+  <style>
+:root {
+  --bg: #0f1419;
+  --bg-card: #1a222d;
+  --bg-elevated: #232d3b;
+  --bg-input: #151c25;
+  --border: #2d3a4a;
+  --text: #e8eef4;
+  --text-muted: #8b9aab;
+  --text-soft: #6b7c8f;
+  --accent: #5b9fd4;
+  --accent-soft: rgba(91, 159, 212, 0.15);
+  --success: #6bbf8a;
+  --success-soft: rgba(107, 191, 138, 0.12);
+  --warn: #d4a85b;
+  --warn-soft: rgba(212, 168, 91, 0.14);
+  --danger-soft: rgba(212, 110, 110, 0.12);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+  padding: 0 0 3rem;
+}
+
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem;
+}
+
+header.app-header {
+  padding: 1.25rem 0 1rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.25rem;
+}
+
+header.app-header h1 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+header.app-header .subtitle {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.phase-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+.phase-badge.aufbau {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.15rem 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.card h2 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.85rem;
+  color: var(--text);
+}
+
+.card h2 .hint {
+  font-weight: 400;
+  color: var(--text-soft);
+  font-size: 0.8rem;
+  margin-left: 0.35rem;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 520px) {
+  .metrics {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.metric {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 0.9rem;
+}
+
+.metric.primary {
+  grid-column: 1 / -1;
+  background: var(--accent-soft);
+  border: 1px solid rgba(91, 159, 212, 0.25);
+}
+
+@media (min-width: 520px) {
+  .metric.primary {
+    grid-column: span 2;
+  }
+}
+
+.metric .label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.metric .value {
+  font-size: 1.35rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric.primary .value {
+  font-size: 1.75rem;
+  color: var(--accent);
+}
+
+.metric .sub {
+  font-size: 0.75rem;
+  color: var(--text-soft);
+  margin-top: 0.15rem;
+}
+
+.metric .value.loss {
+  color: var(--success);
+}
+
+.metric .value.gain {
+  color: var(--warn);
+}
+
+.alert {
+  background: var(--warn-soft);
+  border: 1px solid rgba(212, 168, 91, 0.35);
+  border-radius: var(--radius);
+  padding: 1rem 1.15rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.alert strong {
+  color: var(--warn);
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.alert p {
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem 1.25rem;
+}
+
+.empty-state p {
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  max-width: 28rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+form.entry-form,
+form.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 420px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.field.full {
+  grid-column: 1 / -1;
+}
+
+.field label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.field .field-hint {
+  font-size: 0.7rem;
+  color: var(--text-soft);
+}
+
+input[type="number"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="text"],
+select,
+textarea {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 0.55rem 0.7rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  width: 100%;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 2.5rem;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.check-row input {
+  width: auto;
+  accent-color: var(--accent);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+  font-weight: 550;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #0a1018;
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.btn-secondary {
+  background: var(--bg-elevated);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--text-soft);
+}
+
+.btn-danger {
+  background: var(--danger-soft);
+  border-color: rgba(212, 110, 110, 0.35);
+  color: #e8a0a0;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.8rem;
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.chart-wrap {
+  position: relative;
+  height: 240px;
+  margin-top: 0.25rem;
+}
+
+.digest-grid {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.digest-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.digest-item:last-child {
+  border-bottom: none;
+}
+
+.digest-item .d-label {
+  color: var(--text-muted);
+}
+
+.digest-item .d-value {
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.digest-item .d-value.ok {
+  color: var(--success);
+}
+
+.digest-item .d-value.warn {
+  color: var(--warn);
+}
+
+.entries-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.entry-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.35rem 0.75rem;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 0.9rem;
+  align-items: start;
+}
+
+.entry-item .weight {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.05rem;
+}
+
+.entry-item .meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.entry-item .note {
+  grid-column: 1 / -1;
+  font-size: 0.8rem;
+  color: var(--text-soft);
+  font-style: italic;
+}
+
+.entry-item .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.25rem;
+}
+
+.tag {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.tag.baseline {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.tag.aufbau {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.entry-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.tab {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.tab.active {
+  background: var(--accent-soft);
+  border-color: rgba(91, 159, 212, 0.4);
+  color: var(--accent);
+}
+
+.panel {
+  display: none;
+}
+
+.panel.active {
+  display: block;
+}
+
+.calm-note {
+  font-size: 0.8rem;
+  color: var(--text-soft);
+  margin-top: 0.75rem;
+  line-height: 1.45;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+footer.app-footer {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-soft);
+}
+
+.toast {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.7rem 1.2rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  box-shadow: var(--shadow);
+  transition: transform 0.25s ease;
+  z-index: 100;
+  max-width: 90vw;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script>
+/**
+ * Gewichtstracking v1 – Valentin
+ * Persistenz: localStorage. Kein Backend.
+ *
+ * 7-Tage-Mittel-Regel:
+ *   Pro Kalendertag mit Einträgen → Tagesmittelwert.
+ *   Dann Mittel über alle Tage mit Daten im Fenster der letzten 7 Kalendertage
+ *   (inkl. heute). Anzeige der beitragenden Tage.
+ *
+ * Wochenrate:
+ *   currentMean7 - pastMean7 (vor ~7 Tagen) als kg/Woche. Negativ = Verlust.
+ *
+ * Soft-Alert:
+ *   Wenn über 10–14 Tage der 7-Tage-Mittel-Trend ≥ 0 (flach/steigend).
+ */
+
+(function () {
+  "use strict";
+
+  const STORAGE_KEY = "gewichtstracking_v1";
+  const DEFAULT_SETTINGS = {
+    baselineDate: "2026-09-25",
+    goalDate: "2026-12-31",
+    goalWeight: 65.5,
+    defaultPhase: "Cut",
+    rateMin: 0.35,
+    rateMax: 0.5,
+    heightCm: 177,
+    ageYears: 38,
+  };
+
+  /** @typedef {{ id: string, weight: number, datetime: string, note: string, phase: string, baseline: boolean }} Entry */
+
+  let state = {
+    settings: { ...DEFAULT_SETTINGS },
+    entries: /** @type {Entry[]} */ ([]),
+  };
+
+  let chart = null;
+
+  // —— Storage ——
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data.settings) state.settings = { ...DEFAULT_SETTINGS, ...data.settings };
+      if (Array.isArray(data.entries)) state.entries = data.entries;
+    } catch (e) {
+      console.warn("Laden fehlgeschlagen:", e);
+    }
+  }
+
+  function save() {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ settings: state.settings, entries: state.entries, version: 1 })
+    );
+  }
+
+  // —— Date helpers ——
+
+  function pad(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  /** Local YYYY-MM-DD from Date */
+  function toDateKey(d) {
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  function parseDateKey(key) {
+    const [y, m, day] = key.split("-").map(Number);
+    return new Date(y, m - 1, day);
+  }
+
+  function addDays(date, days) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    d.setDate(d.getDate() + days);
+    return d;
+  }
+
+  function formatDeDate(dateOrKey) {
+    const d = typeof dateOrKey === "string" ? parseDateKey(dateOrKey.slice(0, 10)) : dateOrKey;
+    return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+  }
+
+  function formatDeDateTime(isoLocal) {
+    // isoLocal like "2026-09-25T07:30"
+    const [datePart, timePart] = isoLocal.split("T");
+    const time = timePart ? timePart.slice(0, 5) : "";
+    return `${formatDeDate(datePart)}${time ? ", " + time : ""}`;
+  }
+
+  function nowLocalDatetimeValue() {
+    const d = new Date();
+    return `${toDateKey(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function morningBaselineDatetime(dateKey) {
+    return `${dateKey}T07:00`;
+  }
+
+  function fmtKg(n, digits = 1) {
+    if (n == null || Number.isNaN(n)) return "—";
+    return n.toLocaleString("de-DE", {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    });
+  }
+
+  function fmtDelta(n, digits = 2) {
+    if (n == null || Number.isNaN(n)) return "—";
+    const sign = n > 0 ? "+" : "";
+    return sign + n.toLocaleString("de-DE", {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    });
+  }
+
+  // —— Math ——
+
+  /** Day key → mean weight for that calendar day */
+  function dailyMeans(entries) {
+    /** @type {Record<string, number[]>} */
+    const byDay = {};
+    for (const e of entries) {
+      const key = e.datetime.slice(0, 10);
+      if (!byDay[key]) byDay[key] = [];
+      byDay[key].push(e.weight);
+    }
+    /** @type {Record<string, number>} */
+    const means = {};
+    for (const [k, arr] of Object.entries(byDay)) {
+      means[k] = arr.reduce((a, b) => a + b, 0) / arr.length;
+    }
+    return means;
+  }
+
+  /**
+   * 7-day mean ending on endDate (inclusive).
+   * Averages available daily means in [endDate-6, endDate].
+   * @returns {{ mean: number|null, days: number, windowStart: string, windowEnd: string }}
+   */
+  function mean7Ending(daily, endDate) {
+    const end = typeof endDate === "string" ? parseDateKey(endDate) : endDate;
+    const keys = [];
+    for (let i = 6; i >= 0; i--) {
+      keys.push(toDateKey(addDays(end, -i)));
+    }
+    const vals = keys.filter((k) => daily[k] != null).map((k) => daily[k]);
+    if (vals.length === 0) {
+      return {
+        mean: null,
+        days: 0,
+        windowStart: keys[0],
+        windowEnd: keys[6],
+      };
+    }
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+    return {
+      mean,
+      days: vals.length,
+      windowStart: keys[0],
+      windowEnd: keys[6],
+    };
+  }
+
+  /** Latest calendar day that has data, or today */
+  function latestDataDay(daily) {
+    const keys = Object.keys(daily).sort();
+    if (keys.length === 0) return toDateKey(new Date());
+    return keys[keys.length - 1];
+  }
+
+  function weeklyRate(daily, asOfDate) {
+    const end = typeof asOfDate === "string" ? parseDateKey(asOfDate) : asOfDate;
+    const current = mean7Ending(daily, end);
+    const past = mean7Ending(daily, addDays(end, -7));
+    if (current.mean == null || past.mean == null) {
+      return { rate: null, current, past };
+    }
+    return {
+      rate: current.mean - past.mean,
+      current,
+      past,
+    };
+  }
+
+  /**
+   * Soft-alert: look at 7-day means for each day in the last 14 days that we can compute,
+   * and compare mean at start of window (~14 days ago / first available) to current.
+   * If trend ≥ 0 over ≥10 days of observation → alert.
+   */
+  function softAlertInfo(daily) {
+    const endKey = latestDataDay(daily);
+    const end = parseDateKey(endKey);
+    /** @type {{ key: string, mean: number }[]} */
+    const series = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = addDays(end, -i);
+      const m = mean7Ending(daily, d);
+      if (m.mean != null && m.days >= 3) {
+        series.push({ key: toDateKey(d), mean: m.mean });
+      }
+    }
+    if (series.length < 10) {
+      return { show: false, reason: "zu_wenig", series };
+    }
+    // Use first and last points spanning at least 10 calendar days
+    const first = series[0];
+    const last = series[series.length - 1];
+    const spanDays =
+      (parseDateKey(last.key) - parseDateKey(first.key)) / (1000 * 60 * 60 * 24);
+    if (spanDays < 9) {
+      return { show: false, reason: "span_kurz", series };
+    }
+    const delta = last.mean - first.mean;
+    // Flat or up: delta >= -0.05 (tiny noise tolerance toward flat)
+    const flatOrUp = delta >= -0.05;
+    return {
+      show: flatOrUp,
+      delta,
+      spanDays: Math.round(spanDays),
+      first,
+      last,
+      series,
+    };
+  }
+
+  // —— UI helpers ——
+
+  function $(id) {
+    return document.getElementById(id);
+  }
+
+  function toast(msg) {
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => el.classList.remove("show"), 2800);
+  }
+
+  function sortedEntries() {
+    return [...state.entries].sort((a, b) => b.datetime.localeCompare(a.datetime));
+  }
+
+
+  function buildDigestPlaintext() {
+    const daily = dailyMeans(state.entries);
+    if (Object.keys(daily).length === 0) return "";
+    const asOf = latestDataDay(daily);
+    const m7 = mean7Ending(daily, asOf);
+    const wr = weeklyRate(daily, asOf);
+    const s = state.settings;
+    const dist = m7.mean != null ? m7.mean - s.goalWeight : null;
+    const lines = [
+      "Wochen-Digest Gewichtstracking",
+      "Stand: " + formatDeDate(asOf),
+      "Phase: " + s.defaultPhase,
+      "7-Tage-Mittel: " + (m7.mean != null ? fmtKg(m7.mean) + " kg (" + m7.days + " Tage)" : "—"),
+      "Δ vs. Vorwoche: " + (wr.rate != null ? fmtDelta(wr.rate) + " kg" : "—"),
+      "Abstand zum Ziel (" + fmtKg(s.goalWeight) + " kg): " +
+        (dist != null
+          ? (dist > 0 ? fmtKg(dist) + " kg über Ziel" : dist < 0 ? fmtKg(Math.abs(dist)) + " kg unter Ziel" : "am Ziel")
+          : "—"),
+      "Wochenrate: " + (wr.rate != null ? fmtDelta(wr.rate) + " kg/Wo" : "—") +
+        " (Zielband −" + fmtKg(s.rateMin, 2) + " bis −" + fmtKg(s.rateMax, 2) + " kg/Wo)",
+    ];
+    return lines.join("\n");
+  }
+
+  async function copyWochenDigest() {
+    const text = buildDigestPlaintext();
+    if (!text) {
+      toast("Noch keine Daten für den Digest");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      toast("Wochen-Digest kopiert");
+    } catch (e) {
+      // Fallback
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+      toast("Wochen-Digest kopiert");
+    }
+  }
+
+  // —— Tabs ——
+
+  function switchPanel(name) {
+    document.querySelectorAll(".tab").forEach((t) => {
+      const active = t.dataset.panel === name;
+      t.classList.toggle("active", active);
+      t.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    document.querySelectorAll(".panel").forEach((p) => {
+      const active = p.id === "panel-" + name;
+      p.classList.toggle("active", active);
+      p.hidden = !active;
+    });
+  }
+
+  // —— Render ——
+
+  function renderPhaseBadge() {
+    const badge = $("phaseBadge");
+    const phase = state.settings.defaultPhase;
+    badge.textContent = phase;
+    badge.classList.toggle("aufbau", phase === "Aufbau");
+  }
+
+  function renderDashboard() {
+    const hasEntries = state.entries.length > 0;
+    $("emptyState").hidden = hasEntries;
+    $("dashboardContent").hidden = !hasEntries;
+
+    if (!hasEntries) {
+      if (chart) {
+        chart.destroy();
+        chart = null;
+      }
+      return;
+    }
+
+    const daily = dailyMeans(state.entries);
+    const asOf = latestDataDay(daily);
+    const m7 = mean7Ending(daily, asOf);
+    const wr = weeklyRate(daily, asOf);
+    const s = state.settings;
+
+    // Primary metric
+    $("metricMean7").textContent = m7.mean != null ? fmtKg(m7.mean) + " kg" : "—";
+    if (m7.days <= 0) {
+      $("metricMean7Sub").textContent = "noch keine Daten im Fenster";
+    } else if (m7.days < 4) {
+      $("metricMean7Sub").textContent =
+        `${m7.days} Tag${m7.days === 1 ? "" : "e"} im Fenster · noch unsicher – erst ab ~4 Tagen belastbar · Stand ${formatDeDate(asOf)}`;
+    } else {
+      $("metricMean7Sub").textContent =
+        `${m7.days} Tag${m7.days === 1 ? "" : "e"} im Fenster · Stand ${formatDeDate(asOf)}`;
+    }
+
+    // Rate
+    const rateEl = $("metricRate");
+    if (wr.rate != null) {
+      rateEl.textContent = fmtDelta(wr.rate) + " kg/Wo";
+      rateEl.classList.toggle("loss", wr.rate < -0.05);
+      rateEl.classList.toggle("gain", wr.rate > 0.05);
+    } else {
+      rateEl.textContent = "—";
+      rateEl.classList.remove("loss", "gain");
+    }
+    $("metricRateSub").textContent = `Ziel: ${fmtKg(s.rateMin, 2)}–${fmtKg(s.rateMax, 2)} kg/Wo Verlust`;
+
+    // Goal
+    $("metricGoal").textContent = fmtKg(s.goalWeight) + " kg";
+    const dist = m7.mean != null ? m7.mean - s.goalWeight : null;
+    $("metricGoalSub").textContent =
+      dist != null
+        ? `noch ${fmtKg(Math.abs(dist))} kg · bis ${formatDeDate(s.goalDate)}`
+        : `bis ${formatDeDate(s.goalDate)}`;
+
+    // Last entry
+    const last = sortedEntries()[0];
+    $("metricLast").textContent = last ? fmtKg(last.weight) + " kg" : "—";
+    $("metricLastSub").textContent = last
+      ? formatDeDateTime(last.datetime) + " · Einzelwerte schwanken – normal"
+      : "Einzelwerte schwanken – normal";
+
+    // Digest
+    $("digestMean").textContent = m7.mean != null ? fmtKg(m7.mean) + " kg" : "—";
+
+    const deltaEl = $("digestDelta");
+    if (wr.rate != null) {
+      deltaEl.textContent = fmtDelta(wr.rate) + " kg";
+      deltaEl.className = "d-value " + (wr.rate <= 0 ? "ok" : "warn");
+    } else {
+      deltaEl.textContent = "— (Vorwoche braucht Daten)";
+      deltaEl.className = "d-value";
+    }
+
+    const distEl = $("digestDistance");
+    if (dist != null) {
+      distEl.textContent =
+        dist > 0 ? fmtKg(dist) + " kg über Ziel" : dist < 0 ? fmtKg(Math.abs(dist)) + " kg unter Ziel" : "am Ziel";
+    } else {
+      distEl.textContent = "—";
+    }
+
+    const bandEl = $("digestRateBand");
+    if (wr.rate != null) {
+      // Loss is negative; target band is rateMin..rateMax loss → compare -rate
+      const loss = -wr.rate;
+      if (loss >= s.rateMin && loss <= s.rateMax) {
+        bandEl.textContent = "im Zielband ✓";
+        bandEl.className = "d-value ok";
+      } else if (loss > s.rateMax) {
+        bandEl.textContent = "schneller als Zielband";
+        bandEl.className = "d-value warn";
+      } else if (loss < 0) {
+        bandEl.textContent = "steigend / nicht im Cut-Tempo";
+        bandEl.className = "d-value warn";
+      } else {
+        bandEl.textContent = "langsamer als Zielband";
+        bandEl.className = "d-value warn";
+      }
+    } else {
+      bandEl.textContent = "—";
+      bandEl.className = "d-value";
+    }
+
+    // Soft alert (nur Cut: Settings-Phase ODER letzter Eintrag Aufbau → aus)
+    const alert = softAlertInfo(daily);
+    const alertBox = $("softAlert");
+    const lastPhase = last ? last.phase : s.defaultPhase;
+    const inCut = s.defaultPhase === "Cut" && lastPhase !== "Aufbau";
+    if (alert.show && inCut) {
+      alertBox.hidden = false;
+      $("softAlertText").textContent =
+        "Dein 7-Tage-Mittel ist seit ca. " +
+        (alert.spanDays || 10) +
+        " Tagen flach oder leicht gestiegen. " +
+        "Zuerst Salz und Wasser prüfen (Restaurant, Stress, wenig Schlaf) – das erklärt oft alles. " +
+        "Wenn der Trend weiter stehen bleibt, kannst du ruhig etwa −75 bis −100 kcal anpassen. Kein Drama.";
+    } else {
+      alertBox.hidden = true;
+    }
+
+    renderChart(daily);
+  }
+
+  function renderChart(daily) {
+    const canvas = $("trendChart");
+    if (!canvas || typeof Chart === "undefined") return;
+
+    // Show from baseline or earliest entry, at least ~8 weeks lookback from latest
+    const keys = Object.keys(daily).sort();
+    if (keys.length === 0) return;
+
+    const latest = parseDateKey(keys[keys.length - 1]);
+    const earliest = parseDateKey(keys[0]);
+    const eightWeeksAgo = addDays(latest, -56);
+    const start = earliest < eightWeeksAgo ? earliest : eightWeeksAgo;
+    // Prefer showing from baseline if set and within range
+    const baseline = parseDateKey(state.settings.baselineDate);
+    const chartStart = baseline <= latest && baseline >= addDays(latest, -90) ? baseline : start;
+
+    const labels = [];
+    const dailySeries = [];
+    const mean7Series = [];
+
+    let d = chartStart;
+    while (d <= latest) {
+      const key = toDateKey(d);
+      labels.push(formatDeDate(key));
+      dailySeries.push(daily[key] != null ? Math.round(daily[key] * 10) / 10 : null);
+      const m = mean7Ending(daily, d);
+      mean7Series.push(m.mean != null && m.days >= 2 ? Math.round(m.mean * 100) / 100 : null);
+      d = addDays(d, 1);
+    }
+
+    const goal = state.settings.goalWeight;
+
+    const cfg = {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Tageswert",
+            data: dailySeries,
+            borderColor: "rgba(139, 154, 171, 0.45)",
+            backgroundColor: "transparent",
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            borderWidth: 1.5,
+            tension: 0.2,
+            spanGaps: false,
+            order: 2,
+          },
+          {
+            label: "7-Tage-Mittel",
+            data: mean7Series,
+            borderColor: "#5b9fd4",
+            backgroundColor: "rgba(91, 159, 212, 0.08)",
+            pointRadius: 0,
+            borderWidth: 2.5,
+            tension: 0.35,
+            fill: false,
+            spanGaps: true,
+            order: 1,
+          },
+          {
+            label: "Ziel",
+            data: labels.map(() => goal),
+            borderColor: "rgba(107, 191, 138, 0.55)",
+            borderDash: [6, 4],
+            pointRadius: 0,
+            borderWidth: 1.5,
+            fill: false,
+            order: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: {
+            labels: {
+              color: "#8b9aab",
+              boxWidth: 12,
+              font: { size: 11 },
+            },
+          },
+          tooltip: {
+            callbacks: {
+              label(ctx) {
+                const v = ctx.parsed.y;
+                if (v == null) return ctx.dataset.label + ": —";
+                return ctx.dataset.label + ": " + fmtKg(v) + " kg";
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: "#6b7c8f",
+              maxRotation: 0,
+              autoSkip: true,
+              maxTicksLimit: 8,
+              font: { size: 10 },
+            },
+            grid: { color: "rgba(45, 58, 74, 0.5)" },
+          },
+          y: {
+            ticks: {
+              color: "#6b7c8f",
+              font: { size: 10 },
+              callback(v) {
+                return v + " kg";
+              },
+            },
+            grid: { color: "rgba(45, 58, 74, 0.5)" },
+          },
+        },
+      },
+    };
+
+    if (chart) {
+      chart.data = cfg.data;
+      chart.options = cfg.options;
+      chart.update();
+    } else {
+      chart = new Chart(canvas, cfg);
+    }
+  }
+
+  function renderHistory() {
+    const list = $("entriesList");
+    const empty = $("historyEmpty");
+    const entries = sortedEntries();
+    empty.hidden = entries.length > 0;
+    list.innerHTML = "";
+
+    for (const e of entries) {
+      const li = document.createElement("li");
+      li.className = "entry-item";
+
+      const tags = [];
+      if (e.baseline) tags.push('<span class="tag baseline">Baseline</span>');
+      tags.push(
+        `<span class="tag${e.phase === "Aufbau" ? " aufbau" : ""}">${escapeHtml(e.phase)}</span>`
+      );
+
+      li.innerHTML = `
+        <div>
+          <div class="weight">${fmtKg(e.weight)} kg</div>
+          <div class="meta">${formatDeDateTime(e.datetime)}</div>
+          <div class="tags">${tags.join("")}</div>
+          ${e.note ? `<div class="note">${escapeHtml(e.note)}</div>` : ""}
+        </div>
+        <div class="entry-actions">
+          <button type="button" class="btn btn-ghost btn-sm" data-edit="${e.id}">Bearbeiten</button>
+          <button type="button" class="btn btn-danger btn-sm" data-del="${e.id}">Löschen</button>
+        </div>
+      `;
+      list.appendChild(li);
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function fillSettingsForm() {
+    const s = state.settings;
+    $("baselineDate").value = s.baselineDate;
+    $("goalDate").value = s.goalDate;
+    $("goalWeight").value = s.goalWeight;
+    $("defaultPhase").value = s.defaultPhase;
+    $("rateMin").value = s.rateMin;
+    $("rateMax").value = s.rateMax;
+    $("heightCm").value = s.heightCm ?? "";
+    $("ageYears").value = s.ageYears ?? "";
+  }
+
+  function fillEntryFormDefaults() {
+    $("editId").value = "";
+    $("weightInput").value = "";
+    $("datetimeInput").value = nowLocalDatetimeValue();
+    $("noteInput").value = "";
+    $("phaseInput").value = state.settings.defaultPhase;
+    $("baselineInput").checked = false;
+    $("saveEntryBtn").textContent = "Speichern";
+    $("cancelEditBtn").hidden = true;
+  }
+
+  function renderAll() {
+    renderPhaseBadge();
+    renderDashboard();
+    renderHistory();
+    fillSettingsForm();
+  }
+
+  // —— CRUD ——
+
+  function uid() {
+    return "e_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+  }
+
+  function upsertEntry(entry) {
+    const idx = state.entries.findIndex((x) => x.id === entry.id);
+    if (idx >= 0) state.entries[idx] = entry;
+    else state.entries.push(entry);
+    save();
+    renderAll();
+  }
+
+  function deleteEntry(id) {
+    if (!confirm("Eintrag wirklich löschen?")) return;
+    state.entries = state.entries.filter((e) => e.id !== id);
+    save();
+    renderAll();
+    toast("Eintrag gelöscht");
+  }
+
+  function startEdit(id) {
+    const e = state.entries.find((x) => x.id === id);
+    if (!e) return;
+    switchPanel("log");
+    $("editId").value = e.id;
+    $("weightInput").value = e.weight;
+    $("datetimeInput").value = e.datetime;
+    $("noteInput").value = e.note || "";
+    $("phaseInput").value = e.phase;
+    $("baselineInput").checked = !!e.baseline;
+    $("saveEntryBtn").textContent = "Aktualisieren";
+    $("cancelEditBtn").hidden = false;
+  }
+
+  // —— Export / Import ——
+
+  function downloadBlob(filename, blob) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportJson() {
+    const payload = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      settings: state.settings,
+      entries: state.entries,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    downloadBlob(`gewichtstracking_${toDateKey(new Date())}.json`, blob);
+    toast("JSON exportiert");
+  }
+
+  function exportCsv() {
+    const header = ["id", "datetime", "weight_kg", "note", "phase", "baseline"];
+    const rows = sortedEntries().map((e) =>
+      [
+        e.id,
+        e.datetime,
+        e.weight.toFixed(1),
+        `"${(e.note || "").replace(/"/g, '""')}"`,
+        e.phase,
+        e.baseline ? "1" : "0",
+      ].join(",")
+    );
+    const csv = "\uFEFF" + header.join(",") + "\n" + rows.join("\n");
+    downloadBlob(`gewichtstracking_${toDateKey(new Date())}.csv`, new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    toast("CSV exportiert");
+  }
+
+  function importJson(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(String(reader.result));
+        if (!data || !Array.isArray(data.entries)) {
+          throw new Error("Ungültiges Format");
+        }
+        if (
+          !confirm(
+            "Import ersetzt alle aktuellen Einträge und Einstellungen. Fortfahren?"
+          )
+        ) {
+          return;
+        }
+        state.settings = { ...DEFAULT_SETTINGS, ...(data.settings || {}) };
+        state.entries = data.entries.map((e) => ({
+          id: e.id || uid(),
+          weight: Number(e.weight),
+          datetime: e.datetime,
+          note: e.note || "",
+          phase: e.phase === "Aufbau" ? "Aufbau" : "Cut",
+          baseline: !!e.baseline,
+        }));
+        save();
+        fillEntryFormDefaults();
+        renderAll();
+        toast("Import erfolgreich");
+      } catch (err) {
+        alert("Import fehlgeschlagen: " + (err.message || err));
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // —— Events ——
+
+  function bind() {
+    document.querySelectorAll(".tab").forEach((t) => {
+      t.addEventListener("click", () => switchPanel(t.dataset.panel));
+    });
+
+    const copyBtn = $("copyDigest");
+    if (copyBtn) {
+      copyBtn.addEventListener("click", () => {
+        copyWochenDigest();
+      });
+    }
+
+    $("ctaBaseline").addEventListener("click", () => {
+      switchPanel("log");
+      fillEntryFormDefaults();
+      $("datetimeInput").value = morningBaselineDatetime(state.settings.baselineDate);
+      $("baselineInput").checked = true;
+      $("phaseInput").value = state.settings.defaultPhase;
+      $("weightInput").value = "72.0";
+      $("weightInput").focus();
+      toast("Baseline-Datum vorausgefüllt – Gewicht prüfen und speichern");
+    });
+
+    $("entryForm").addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      const weight = parseFloat($("weightInput").value);
+      if (Number.isNaN(weight)) return;
+      const entry = {
+        id: $("editId").value || uid(),
+        weight: Math.round(weight * 10) / 10,
+        datetime: $("datetimeInput").value,
+        note: ($("noteInput").value || "").trim(),
+        phase: $("phaseInput").value,
+        baseline: $("baselineInput").checked,
+      };
+      const wasEdit = !!$("editId").value;
+      upsertEntry(entry);
+      fillEntryFormDefaults();
+      switchPanel("dashboard");
+      toast(wasEdit ? "Eintrag aktualisiert" : "Eintrag gespeichert");
+    });
+
+    $("cancelEditBtn").addEventListener("click", () => {
+      fillEntryFormDefaults();
+    });
+
+    $("entriesList").addEventListener("click", (ev) => {
+      const t = ev.target;
+      if (!(t instanceof HTMLElement)) return;
+      if (t.dataset.edit) startEdit(t.dataset.edit);
+      if (t.dataset.del) deleteEntry(t.dataset.del);
+    });
+
+    $("settingsForm").addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      const rateMin = parseFloat($("rateMin").value);
+      const rateMax = parseFloat($("rateMax").value);
+      if (rateMin > rateMax) {
+        alert("Min-Rate darf nicht größer als Max-Rate sein.");
+        return;
+      }
+      state.settings = {
+        baselineDate: $("baselineDate").value,
+        goalDate: $("goalDate").value,
+        goalWeight: parseFloat($("goalWeight").value),
+        defaultPhase: $("defaultPhase").value,
+        rateMin,
+        rateMax,
+        heightCm: $("heightCm").value ? parseInt($("heightCm").value, 10) : null,
+        ageYears: $("ageYears").value ? parseInt($("ageYears").value, 10) : null,
+      };
+      save();
+      renderAll();
+      toast("Einstellungen gespeichert");
+    });
+
+    $("clearDataBtn").addEventListener("click", () => {
+      if (!confirm("Wirklich ALLE Einträge und Einstellungen zurücksetzen?")) return;
+      if (!confirm("Letzte Bestätigung: Daten unwiderruflich löschen?")) return;
+      state = { settings: { ...DEFAULT_SETTINGS }, entries: [] };
+      save();
+      fillEntryFormDefaults();
+      renderAll();
+      toast("Alles zurückgesetzt");
+    });
+
+    $("exportJsonBtn").addEventListener("click", exportJson);
+    $("exportCsvBtn").addEventListener("click", exportCsv);
+    $("importJsonBtn").addEventListener("click", () => $("importFile").click());
+    $("importFile").addEventListener("change", () => {
+      const f = $("importFile").files && $("importFile").files[0];
+      if (f) importJson(f);
+      $("importFile").value = "";
+    });
+  }
+
+  // —— Init ——
+
+  function init() {
+    load();
+    bind();
+    fillEntryFormDefaults();
+    // Sync phase select default
+    $("phaseInput").value = state.settings.defaultPhase;
+    renderAll();
+
+    // Re-render chart after Chart.js may finish loading
+    if (typeof Chart === "undefined") {
+      const wait = setInterval(() => {
+        if (typeof Chart !== "undefined") {
+          clearInterval(wait);
+          renderDashboard();
+        }
+      }, 50);
+      setTimeout(() => clearInterval(wait), 5000);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+
+  </script>
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <h1>
+        Gewichtstracking
+        <span id="phaseBadge" class="phase-badge">Cut</span>
+      </h1>
+      <p class="subtitle">Ruhig bleiben. Der 7-Tage-Schnitt zählt – nicht der einzelne Tag.</p>
+    </header>
+
+    <nav class="tabs" role="tablist" aria-label="Bereiche">
+      <button type="button" class="tab active" data-panel="dashboard" role="tab" aria-selected="true">Übersicht</button>
+      <button type="button" class="tab" data-panel="log" role="tab" aria-selected="false">Eintragen</button>
+      <button type="button" class="tab" data-panel="history" role="tab" aria-selected="false">Verlauf</button>
+      <button type="button" class="tab" data-panel="settings" role="tab" aria-selected="false">Einstellungen</button>
+    </nav>
+
+    <!-- DASHBOARD -->
+    <section id="panel-dashboard" class="panel active" role="tabpanel">
+      <div id="emptyState" class="card empty-state" hidden>
+        <p>
+          Noch keine Einträge. Starte mit deinem Baseline-Gewicht am
+          <strong>25.09.2026</strong> – so wie vom PT vorgesehen.
+        </p>
+        <button type="button" class="btn btn-primary" id="ctaBaseline">Baseline am 25.09.2026 eintragen</button>
+      </div>
+
+      <div id="dashboardContent">
+        <div id="softAlert" class="alert" hidden>
+          <strong>Sanfter Hinweis</strong>
+          <p id="softAlertText"></p>
+        </div>
+
+        <div class="card">
+          <h2>Kennzahlen <span class="hint">Primär: 7-Tage-Mittel</span></h2>
+          <div class="metrics">
+            <div class="metric primary">
+              <div class="label">7-Tage-Mittel</div>
+              <div class="value" id="metricMean7">—</div>
+              <div class="sub" id="metricMean7Sub">noch keine Daten</div>
+            </div>
+            <div class="metric">
+              <div class="label">Wochenrate</div>
+              <div class="value" id="metricRate">—</div>
+              <div class="sub" id="metricRateSub">Ziel: 0,35–0,5 kg/Wo</div>
+            </div>
+            <div class="metric">
+              <div class="label">Zielgewicht</div>
+              <div class="value" id="metricGoal">—</div>
+              <div class="sub" id="metricGoalSub"></div>
+            </div>
+            <div class="metric">
+              <div class="label">Letzter Eintrag</div>
+              <div class="value" id="metricLast">—</div>
+              <div class="sub" id="metricLastSub">Einzelwerte schwanken – normal</div>
+            </div>
+          </div>
+          <p class="calm-note">
+            +1–2 kg nach Restaurant oder Urlaub sind völlig normal (Salz/Wasser).
+            Der Trend über Tage zählt, nicht der Morgen danach.
+          </p>
+        </div>
+
+        <div class="card">
+          <h2>Wochen-Digest</h2>
+          <div class="digest-grid">
+            <div class="digest-item">
+              <span class="d-label">Aktuelles 7-Tage-Mittel</span>
+              <span class="d-value" id="digestMean">—</span>
+            </div>
+            <div class="digest-item">
+              <span class="d-label">Δ vs. Vorwoche</span>
+              <span class="d-value" id="digestDelta">—</span>
+            </div>
+            <div class="digest-item">
+              <span class="d-label">Abstand zum Ziel</span>
+              <span class="d-value" id="digestDistance">—</span>
+            </div>
+            <div class="digest-item">
+              <span class="d-label">Wochenrate vs. Zielband</span>
+              <span class="d-value" id="digestRateBand">—</span>
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary" id="copyDigest" style="margin-top: 0.75rem;">Wochen-Digest kopieren</button>
+        </div>
+
+        <div class="card">
+          <h2>Trend <span class="hint">4–8+ Wochen · 7-Tage-Mittel hervorgehoben</span></h2>
+          <div class="chart-wrap">
+            <canvas id="trendChart" aria-label="Gewichtsverlauf"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOG -->
+    <section id="panel-log" class="panel" role="tabpanel" hidden>
+      <div class="card">
+        <h2>Gewicht eintragen</h2>
+        <form class="entry-form" id="entryForm">
+          <input type="hidden" id="editId" value="" />
+          <div class="form-row">
+            <div class="field">
+              <label for="weightInput">Gewicht (kg)</label>
+              <input type="number" id="weightInput" step="0.1" min="30" max="250" required placeholder="72,0" />
+              <span class="field-hint">Idealerweise morgens nüchtern</span>
+            </div>
+            <div class="field">
+              <label for="datetimeInput">Datum &amp; Uhrzeit</label>
+              <input type="datetime-local" id="datetimeInput" required />
+            </div>
+          </div>
+          <div class="field">
+            <label for="noteInput">Notiz (optional)</label>
+            <textarea id="noteInput" maxlength="200" rows="2" placeholder="z. B. nach Restaurant, wenig Schlaf …"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="phaseInput">Phase</label>
+              <select id="phaseInput">
+                <option value="Cut">Cut</option>
+                <option value="Aufbau">Aufbau</option>
+              </select>
+            </div>
+            <div class="field" style="justify-content: flex-end; padding-top: 1.4rem;">
+              <label class="check-row">
+                <input type="checkbox" id="baselineInput" />
+                Baseline-Eintrag
+              </label>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button type="submit" class="btn btn-primary" id="saveEntryBtn">Speichern</button>
+            <button type="button" class="btn btn-ghost" id="cancelEditBtn" hidden>Abbrechen</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section id="panel-history" class="panel" role="tabpanel" hidden>
+      <div class="card">
+        <h2>Einträge</h2>
+        <ul class="entries-list" id="entriesList"></ul>
+        <p id="historyEmpty" class="calm-note" hidden>Noch keine Einträge vorhanden.</p>
+      </div>
+      <div class="card">
+        <h2>Daten exportieren / importieren</h2>
+        <div class="btn-row">
+          <button type="button" class="btn btn-secondary" id="exportCsvBtn">CSV exportieren</button>
+          <button type="button" class="btn btn-secondary" id="exportJsonBtn">JSON exportieren</button>
+          <button type="button" class="btn btn-secondary" id="importJsonBtn">JSON importieren</button>
+          <input type="file" id="importFile" accept="application/json,.json" class="sr-only" />
+        </div>
+        <p class="calm-note">Export sichert deine Daten. Import ersetzt die aktuellen Daten nach Bestätigung.</p>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="panel-settings" class="panel" role="tabpanel" hidden>
+      <div class="card">
+        <h2>Einstellungen</h2>
+        <form class="settings-form" id="settingsForm">
+          <div class="form-row">
+            <div class="field">
+              <label for="baselineDate">Baseline / Start</label>
+              <input type="date" id="baselineDate" required />
+            </div>
+            <div class="field">
+              <label for="goalDate">Zieldatum</label>
+              <input type="date" id="goalDate" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="goalWeight">Zielgewicht (kg)</label>
+              <input type="number" id="goalWeight" step="0.1" min="40" max="200" required />
+              <span class="field-hint">Bereich ca. 65–66 kg – eine Zahl editierbar</span>
+            </div>
+            <div class="field">
+              <label for="defaultPhase">Standard-Phase</label>
+              <select id="defaultPhase">
+                <option value="Cut">Cut</option>
+                <option value="Aufbau">Aufbau</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="rateMin">Zielrate min (kg/Wo Verlust)</label>
+              <input type="number" id="rateMin" step="0.05" min="0.05" max="2" required />
+            </div>
+            <div class="field">
+              <label for="rateMax">Zielrate max (kg/Wo Verlust)</label>
+              <input type="number" id="rateMax" step="0.05" min="0.05" max="2" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="heightCm">Größe (cm, optional)</label>
+              <input type="number" id="heightCm" step="1" min="100" max="250" />
+            </div>
+            <div class="field">
+              <label for="ageYears">Alter (optional)</label>
+              <input type="number" id="ageYears" step="1" min="10" max="120" />
+            </div>
+          </div>
+          <div class="btn-row">
+            <button type="submit" class="btn btn-primary">Einstellungen speichern</button>
+            <button type="button" class="btn btn-danger" id="clearDataBtn">Alle Daten löschen</button>
+          </div>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Berechnungsregeln</h2>
+        <p class="calm-note" style="margin-top:0">
+          <strong>7-Tage-Mittel:</strong> Pro Kalendertag mit Einträgen wird der Tagesmittelwert gebildet.
+          Dann Mittel über alle Tage mit Daten im Fenster der letzten 7 Kalendertage (inkl. heute).
+          Angezeigt wird, wie viele Tage beigetragen haben.<br /><br />
+          <strong>Wochenrate:</strong> Aktuelles 7-Tage-Mittel minus 7-Tage-Mittel von vor ~7 Tagen
+          (kg/Woche). Negativ = Abnahme.<br /><br />
+          <strong>Soft-Alert:</strong> Wenn der Trend des 7-Tage-Mittels über die letzten 10–14 Tage
+          flach oder steigend ist (≥ 0), erscheint ein ruhiger Hinweis.
+        </p>
+      </div>
+    </section>
+
+    <footer class="app-footer">v1 · Nur lokal im Browser · Kein Backend</footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
