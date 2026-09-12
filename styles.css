@@ -461,6 +461,14 @@ textarea {
   color: var(--success);
 }
 
+.tag.event {
+  background: var(--warn-soft);
+  color: var(--warn);
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 0.7rem;
+}
+
 .entry-actions {
   display: flex;
   gap: 0.35rem;

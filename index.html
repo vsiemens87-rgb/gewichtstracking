@@ -91,6 +91,10 @@
               <span class="d-label">Wochenrate vs. Zielband</span>
               <span class="d-value" id="digestRateBand">—</span>
             </div>
+            <div class="digest-item" id="digestEventRow" hidden>
+              <span class="d-label">Ereignis / Soft-Alert</span>
+              <span class="d-value" id="digestEvent">—</span>
+            </div>
           </div>
           <button type="button" class="btn btn-secondary" id="copyDigest" style="margin-top: 0.75rem;">Wochen-Digest kopieren</button>
         </div>
@@ -124,6 +128,23 @@
           <div class="field">
             <label for="noteInput">Notiz (optional)</label>
             <textarea id="noteInput" maxlength="200" rows="2" placeholder="z. B. nach Restaurant, wenig Schlaf …"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="eventTypeInput">Ereignis (optional)</label>
+              <select id="eventTypeInput">
+                <option value="">Kein Ereignis</option>
+                <option value="Cheat">Cheat</option>
+                <option value="Restaurant">Restaurant</option>
+                <option value="Sonstiges">Sonstiges Ereignis</option>
+                <option value="custom">Eigenes Label …</option>
+              </select>
+              <span class="field-hint">Markiert Tage mit Einfluss (bleiben im 7-Tage-Mittel)</span>
+            </div>
+            <div class="field" id="eventLabelField" hidden>
+              <label for="eventLabelInput">Ereignis-Label</label>
+              <input type="text" id="eventLabelInput" maxlength="40" placeholder="z. B. Hochzeit, Urlaub …" />
+            </div>
           </div>
           <div class="form-row">
             <div class="field">
@@ -216,6 +237,13 @@
               <input type="number" id="ageYears" step="1" min="10" max="120" />
             </div>
           </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="eventMuteDays">Soft-Alert stumm nach Ereignis (Tage)</label>
+              <input type="number" id="eventMuteDays" step="1" min="3" max="7" required />
+              <span class="field-hint">3–7 Tage; Standard 5. Ereignistage bleiben im 7-Tage-Mittel.</span>
+            </div>
+          </div>
           <div class="btn-row">
             <button type="submit" class="btn btn-primary">Einstellungen speichern</button>
             <button type="button" class="btn btn-danger" id="clearDataBtn">Alle Daten löschen</button>
@@ -232,11 +260,13 @@
           (kg/Woche). Negativ = Abnahme.<br /><br />
           <strong>Soft-Alert:</strong> Wenn der Trend des 7-Tage-Mittels über die letzten 10–14 Tage
           flach oder steigend ist (≥ 0), erscheint ein ruhiger Hinweis.
+          Nach einem Ereignis-Tag (Cheat/Restaurant/…) bleibt der Soft-Alert für die konfigurierte Anzahl Tage stumm.
+          Ereignistage fließen weiter in das 7-Tage-Mittel ein.
         </p>
       </div>
     </section>
 
-    <footer class="app-footer">v1 · Nur lokal im Browser · Kein Backend</footer>
+    <footer class="app-footer">v1.1 · Nur lokal im Browser · Kein Backend</footer>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

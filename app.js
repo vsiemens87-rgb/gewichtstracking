@@ -1,17 +1,22 @@
 /**
- * Gewichtstracking v1 – Valentin
+ * Gewichtstracking v1.1 – Valentin
  * Persistenz: localStorage. Kein Backend.
  *
  * 7-Tage-Mittel-Regel:
  *   Pro Kalendertag mit Einträgen → Tagesmittelwert.
  *   Dann Mittel über alle Tage mit Daten im Fenster der letzten 7 Kalendertage
  *   (inkl. heute). Anzeige der beitragenden Tage.
+ *   Ereignistage bleiben im Mittel (werden nicht ausgeschlossen).
  *
  * Wochenrate:
  *   currentMean7 - pastMean7 (vor ~7 Tagen) als kg/Woche. Negativ = Verlust.
  *
  * Soft-Alert:
  *   Wenn über 10–14 Tage der 7-Tage-Mittel-Trend ≥ 0 (flach/steigend).
+ *   Nach Ereignis-Tag für N Tage stumm (Settings, Default 5).
+ *
+ * Ereignis-Tag:
+ *   Optional eventType + eventLabel am Eintrag; sichtbar in Verlauf + Chart.
  */
 
 (function () {
@@ -27,9 +32,17 @@
     rateMax: 0.5,
     heightCm: 177,
     ageYears: 38,
+    eventMuteDays: 5,
   };
 
-  /** @typedef {{ id: string, weight: number, datetime: string, note: string, phase: string, baseline: boolean }} Entry */
+  const EVENT_TYPES = {
+    Cheat: "Cheat",
+    Restaurant: "Restaurant",
+    Sonstiges: "Sonstiges Ereignis",
+    custom: "Ereignis",
+  };
+
+  /** @typedef {{ id: string, weight: number, datetime: string, note: string, phase: string, baseline: boolean, eventType: string|null, eventLabel: string }} Entry */
 
   let state = {
     settings: { ...DEFAULT_SETTINGS },
@@ -40,13 +53,49 @@
 
   // —— Storage ——
 
+  function clampMuteDays(n) {
+    const v = parseInt(n, 10);
+    if (Number.isNaN(v)) return DEFAULT_SETTINGS.eventMuteDays;
+    return Math.min(7, Math.max(3, v));
+  }
+
+  function normalizeEntry(e) {
+    let eventType = e.eventType != null ? e.eventType : null;
+    let eventLabel = typeof e.eventLabel === "string" ? e.eventLabel : "";
+    // Migrate optional nested event object if present
+    if (!eventType && e.event && typeof e.event === "object") {
+      eventType = e.event.type || null;
+      eventLabel = e.event.label || eventLabel;
+    }
+    if (eventType === "") eventType = null;
+    if (eventType && !["Cheat", "Restaurant", "Sonstiges", "custom"].includes(eventType)) {
+      eventType = "custom";
+      if (!eventLabel) eventLabel = String(e.eventType || "");
+    }
+    return {
+      id: e.id || uid(),
+      weight: Number(e.weight),
+      datetime: e.datetime,
+      note: e.note || "",
+      phase: e.phase === "Aufbau" ? "Aufbau" : "Cut",
+      baseline: !!e.baseline,
+      eventType,
+      eventLabel: eventLabel || "",
+    };
+  }
+
   function load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
       const data = JSON.parse(raw);
-      if (data.settings) state.settings = { ...DEFAULT_SETTINGS, ...data.settings };
-      if (Array.isArray(data.entries)) state.entries = data.entries;
+      if (data.settings) {
+        state.settings = { ...DEFAULT_SETTINGS, ...data.settings };
+        state.settings.eventMuteDays = clampMuteDays(state.settings.eventMuteDays);
+      }
+      if (Array.isArray(data.entries)) {
+        state.entries = data.entries.map(normalizeEntry);
+      }
     } catch (e) {
       console.warn("Laden fehlgeschlagen:", e);
     }
@@ -55,7 +104,7 @@
   function save() {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ settings: state.settings, entries: state.entries, version: 1 })
+      JSON.stringify({ settings: state.settings, entries: state.entries, version: 1.1 })
     );
   }
 
@@ -229,6 +278,65 @@
     };
   }
 
+
+  function entryHasEvent(e) {
+    return !!(e && e.eventType);
+  }
+
+  function eventDisplayLabel(e) {
+    if (!e || !e.eventType) return "";
+    if (e.eventType === "custom") {
+      return (e.eventLabel && e.eventLabel.trim()) || "Ereignis";
+    }
+    if (e.eventType === "Sonstiges") {
+      const extra = (e.eventLabel && e.eventLabel.trim()) || "";
+      return extra ? "Sonstiges: " + extra : EVENT_TYPES.Sonstiges;
+    }
+    const base = EVENT_TYPES[e.eventType] || e.eventType;
+    const extra = (e.eventLabel && e.eventLabel.trim()) || "";
+    return extra ? base + ": " + extra : base;
+  }
+
+  /** Map dateKey → list of event labels that day */
+  function eventsByDay(entries) {
+    /** @type {Record<string, string[]>} */
+    const map = {};
+    for (const e of entries) {
+      if (!entryHasEvent(e)) continue;
+      const key = e.datetime.slice(0, 10);
+      if (!map[key]) map[key] = [];
+      const label = eventDisplayLabel(e);
+      if (!map[key].includes(label)) map[key].push(label);
+    }
+    return map;
+  }
+
+  /**
+   * Most recent event whose day is within mute window before asOf (latest data day).
+   * Mute while daysSince < muteDays → Trend belastbar ab eventDay + muteDays.
+   * @returns {{ entry: Entry, eventDay: string, reliableFrom: string, daysSince: number }|null}
+   */
+  function recentEventMuteInfo(entries, asOfKey, muteDays) {
+    const asOf = parseDateKey(asOfKey);
+    const n = clampMuteDays(muteDays);
+    /** @type {{ entry: Entry, eventDay: string, reliableFrom: string, daysSince: number }|null} */
+    let best = null;
+    for (const e of entries) {
+      if (!entryHasEvent(e)) continue;
+      const eventDay = e.datetime.slice(0, 10);
+      const daysSince =
+        (asOf - parseDateKey(eventDay)) / (1000 * 60 * 60 * 24);
+      if (daysSince < 0) continue; // future relative to asOf
+      if (daysSince >= n) continue;
+      const reliableFrom = toDateKey(addDays(parseDateKey(eventDay), n));
+      const cand = { entry: e, eventDay, reliableFrom, daysSince };
+      if (!best || eventDay > best.eventDay || (eventDay === best.eventDay && e.datetime > best.entry.datetime)) {
+        best = cand;
+      }
+    }
+    return best;
+  }
+
   // —— UI helpers ——
 
   function $(id) {
@@ -256,6 +364,7 @@
     const wr = weeklyRate(daily, asOf);
     const s = state.settings;
     const dist = m7.mean != null ? m7.mean - s.goalWeight : null;
+    const mute = recentEventMuteInfo(state.entries, asOf, s.eventMuteDays);
     const lines = [
       "Wochen-Digest Gewichtstracking",
       "Stand: " + formatDeDate(asOf),
@@ -269,6 +378,14 @@
       "Wochenrate: " + (wr.rate != null ? fmtDelta(wr.rate) + " kg/Wo" : "—") +
         " (Zielband −" + fmtKg(s.rateMin, 2) + " bis −" + fmtKg(s.rateMax, 2) + " kg/Wo)",
     ];
+    if (mute) {
+      const evLabel = eventDisplayLabel(mute.entry);
+      lines.push(
+        "Ereignis am " + formatDeDate(mute.eventDay).slice(0, 6) +
+          (evLabel ? " (" + evLabel + ")" : "") +
+          " — Trend erst ab " + formatDeDate(mute.reliableFrom).slice(0, 6) + " wieder belastbar"
+      );
+    }
     return lines.join("\n");
   }
 
@@ -417,12 +534,14 @@
       bandEl.className = "d-value";
     }
 
-    // Soft alert (nur Cut: Settings-Phase ODER letzter Eintrag Aufbau → aus)
+    // Soft alert (nur Cut; nach Ereignis im Mute-Fenster stumm)
     const alert = softAlertInfo(daily);
     const alertBox = $("softAlert");
     const lastPhase = last ? last.phase : s.defaultPhase;
     const inCut = s.defaultPhase === "Cut" && lastPhase !== "Aufbau";
-    if (alert.show && inCut) {
+    const muteInfo = recentEventMuteInfo(state.entries, asOf, s.eventMuteDays);
+    const mutedByEvent = !!muteInfo;
+    if (alert.show && inCut && !mutedByEvent) {
       alertBox.hidden = false;
       $("softAlertText").textContent =
         "Dein 7-Tage-Mittel ist seit ca. " +
@@ -432,6 +551,22 @@
         "Wenn der Trend weiter stehen bleibt, kannst du ruhig etwa −75 bis −100 kcal anpassen. Kein Drama.";
     } else {
       alertBox.hidden = true;
+    }
+
+    // Digest: Ereignis-Hinweis
+    const digestEventRow = $("digestEventRow");
+    const digestEvent = $("digestEvent");
+    if (muteInfo) {
+      digestEventRow.hidden = false;
+      const dd = formatDeDate(muteInfo.eventDay).slice(0, 6);
+      const rd = formatDeDate(muteInfo.reliableFrom).slice(0, 6);
+      digestEvent.textContent =
+        "Ereignis am " + dd + " — Trend erst ab " + rd + " wieder belastbar";
+      digestEvent.className = "d-value warn";
+    } else {
+      digestEventRow.hidden = true;
+      digestEvent.textContent = "—";
+      digestEvent.className = "d-value";
     }
 
     renderChart(daily);
@@ -453,17 +588,39 @@
     const baseline = parseDateKey(state.settings.baselineDate);
     const chartStart = baseline <= latest && baseline >= addDays(latest, -90) ? baseline : start;
 
+    const evMap = eventsByDay(state.entries);
     const labels = [];
+    const dateKeys = [];
     const dailySeries = [];
     const mean7Series = [];
+    const eventSeries = [];
+    const pointRadius = [];
+    const pointBg = [];
+    const pointBorder = [];
+    const pointBorderWidth = [];
 
     let d = chartStart;
     while (d <= latest) {
       const key = toDateKey(d);
+      dateKeys.push(key);
       labels.push(formatDeDate(key));
-      dailySeries.push(daily[key] != null ? Math.round(daily[key] * 10) / 10 : null);
+      const dayVal = daily[key] != null ? Math.round(daily[key] * 10) / 10 : null;
+      dailySeries.push(dayVal);
       const m = mean7Ending(daily, d);
       mean7Series.push(m.mean != null && m.days >= 2 ? Math.round(m.mean * 100) / 100 : null);
+      const hasEv = !!evMap[key];
+      eventSeries.push(hasEv && dayVal != null ? dayVal : null);
+      if (hasEv && dayVal != null) {
+        pointRadius.push(6);
+        pointBg.push("rgba(212, 168, 91, 0.95)");
+        pointBorder.push("#0f1419");
+        pointBorderWidth.push(2);
+      } else {
+        pointRadius.push(3);
+        pointBg.push("rgba(139, 154, 171, 0.55)");
+        pointBorder.push("rgba(139, 154, 171, 0.45)");
+        pointBorderWidth.push(1);
+      }
       d = addDays(d, 1);
     }
 
@@ -479,12 +636,28 @@
             data: dailySeries,
             borderColor: "rgba(139, 154, 171, 0.45)",
             backgroundColor: "transparent",
-            pointRadius: 3,
-            pointHoverRadius: 5,
+            pointRadius,
+            pointBackgroundColor: pointBg,
+            pointBorderColor: pointBorder,
+            pointBorderWidth,
+            pointHoverRadius: 6,
             borderWidth: 1.5,
             tension: 0.2,
             spanGaps: false,
             order: 2,
+          },
+          {
+            label: "Ereignis",
+            data: eventSeries,
+            borderColor: "transparent",
+            backgroundColor: "rgba(212, 168, 91, 0.95)",
+            pointRadius: 7,
+            pointStyle: "triangle",
+            pointHoverRadius: 9,
+            pointBorderColor: "#0f1419",
+            pointBorderWidth: 2,
+            showLine: false,
+            order: 0,
           },
           {
             label: "7-Tage-Mittel",
@@ -506,7 +679,7 @@
             pointRadius: 0,
             borderWidth: 1.5,
             fill: false,
-            order: 0,
+            order: 3,
           },
         ],
       },
@@ -520,13 +693,23 @@
               color: "#8b9aab",
               boxWidth: 12,
               font: { size: 11 },
+              filter(item) {
+                // Hide duplicate "Ereignis" if no events in view
+                if (item.text === "Ereignis" && !eventSeries.some((v) => v != null)) return false;
+                return true;
+              },
             },
           },
           tooltip: {
             callbacks: {
               label(ctx) {
                 const v = ctx.parsed.y;
-                if (v == null) return ctx.dataset.label + ": —";
+                if (v == null) return null;
+                if (ctx.dataset.label === "Ereignis") {
+                  const key = dateKeys[ctx.dataIndex];
+                  const labs = (evMap[key] || []).join(", ");
+                  return "Ereignis: " + labs + " (" + fmtKg(v) + " kg)";
+                }
                 return ctx.dataset.label + ": " + fmtKg(v) + " kg";
               },
             },
@@ -582,6 +765,11 @@
       tags.push(
         `<span class="tag${e.phase === "Aufbau" ? " aufbau" : ""}">${escapeHtml(e.phase)}</span>`
       );
+      if (entryHasEvent(e)) {
+        tags.push(
+          `<span class="tag event">${escapeHtml(eventDisplayLabel(e))}</span>`
+        );
+      }
 
       li.innerHTML = `
         <div>
@@ -617,6 +805,25 @@
     $("rateMax").value = s.rateMax;
     $("heightCm").value = s.heightCm ?? "";
     $("ageYears").value = s.ageYears ?? "";
+    $("eventMuteDays").value = clampMuteDays(s.eventMuteDays);
+  }
+
+  function syncEventLabelField() {
+    const type = $("eventTypeInput").value;
+    const field = $("eventLabelField");
+    const show = type === "custom" || type === "Sonstiges";
+    field.hidden = !show;
+    if (!show) {
+      // keep label if switching away; cleared on form reset
+    }
+    const label = $("eventLabelInput");
+    if (type === "custom") {
+      label.required = true;
+      label.placeholder = "z. B. Hochzeit, Urlaub …";
+    } else {
+      label.required = false;
+      label.placeholder = "optional, z. B. Pizza-Abend";
+    }
   }
 
   function fillEntryFormDefaults() {
@@ -626,6 +833,9 @@
     $("noteInput").value = "";
     $("phaseInput").value = state.settings.defaultPhase;
     $("baselineInput").checked = false;
+    $("eventTypeInput").value = "";
+    $("eventLabelInput").value = "";
+    syncEventLabelField();
     $("saveEntryBtn").textContent = "Speichern";
     $("cancelEditBtn").hidden = true;
   }
@@ -669,6 +879,9 @@
     $("noteInput").value = e.note || "";
     $("phaseInput").value = e.phase;
     $("baselineInput").checked = !!e.baseline;
+    $("eventTypeInput").value = e.eventType || "";
+    $("eventLabelInput").value = e.eventLabel || "";
+    syncEventLabelField();
     $("saveEntryBtn").textContent = "Aktualisieren";
     $("cancelEditBtn").hidden = false;
   }
@@ -686,7 +899,7 @@
 
   function exportJson() {
     const payload = {
-      version: 1,
+      version: 1.1,
       exportedAt: new Date().toISOString(),
       settings: state.settings,
       entries: state.entries,
@@ -697,7 +910,7 @@
   }
 
   function exportCsv() {
-    const header = ["id", "datetime", "weight_kg", "note", "phase", "baseline"];
+    const header = ["id", "datetime", "weight_kg", "note", "phase", "baseline", "eventType", "eventLabel"];
     const rows = sortedEntries().map((e) =>
       [
         e.id,
@@ -706,6 +919,8 @@
         `"${(e.note || "").replace(/"/g, '""')}"`,
         e.phase,
         e.baseline ? "1" : "0",
+        e.eventType || "",
+        `"${(e.eventLabel || "").replace(/"/g, '""')}"`,
       ].join(",")
     );
     const csv = "\uFEFF" + header.join(",") + "\n" + rows.join("\n");
@@ -729,14 +944,8 @@
           return;
         }
         state.settings = { ...DEFAULT_SETTINGS, ...(data.settings || {}) };
-        state.entries = data.entries.map((e) => ({
-          id: e.id || uid(),
-          weight: Number(e.weight),
-          datetime: e.datetime,
-          note: e.note || "",
-          phase: e.phase === "Aufbau" ? "Aufbau" : "Cut",
-          baseline: !!e.baseline,
-        }));
+        state.settings.eventMuteDays = clampMuteDays(state.settings.eventMuteDays);
+        state.entries = data.entries.map(normalizeEntry);
         save();
         fillEntryFormDefaults();
         renderAll();
@@ -754,6 +963,8 @@
     document.querySelectorAll(".tab").forEach((t) => {
       t.addEventListener("click", () => switchPanel(t.dataset.panel));
     });
+
+    $("eventTypeInput").addEventListener("change", syncEventLabelField);
 
     const copyBtn = $("copyDigest");
     if (copyBtn) {
@@ -777,6 +988,16 @@
       ev.preventDefault();
       const weight = parseFloat($("weightInput").value);
       if (Number.isNaN(weight)) return;
+      let eventType = $("eventTypeInput").value || null;
+      if (eventType === "") eventType = null;
+      let eventLabel = ($("eventLabelInput").value || "").trim();
+      if (eventType === "custom" && !eventLabel) {
+        alert("Bitte ein Label für das eigene Ereignis eingeben.");
+        return;
+      }
+      if (eventType !== "custom" && eventType !== "Sonstiges") {
+        // optional free label only kept for Sonstiges/custom; still allow empty
+      }
       const entry = {
         id: $("editId").value || uid(),
         weight: Math.round(weight * 10) / 10,
@@ -784,6 +1005,8 @@
         note: ($("noteInput").value || "").trim(),
         phase: $("phaseInput").value,
         baseline: $("baselineInput").checked,
+        eventType,
+        eventLabel: eventType ? eventLabel : "",
       };
       const wasEdit = !!$("editId").value;
       upsertEntry(entry);
@@ -811,6 +1034,11 @@
         alert("Min-Rate darf nicht größer als Max-Rate sein.");
         return;
       }
+      const muteRaw = parseInt($("eventMuteDays").value, 10);
+      if (Number.isNaN(muteRaw) || muteRaw < 3 || muteRaw > 7) {
+        alert("Soft-Alert-Stummschaltung: bitte 3–7 Tage wählen.");
+        return;
+      }
       state.settings = {
         baselineDate: $("baselineDate").value,
         goalDate: $("goalDate").value,
@@ -820,6 +1048,7 @@
         rateMax,
         heightCm: $("heightCm").value ? parseInt($("heightCm").value, 10) : null,
         ageYears: $("ageYears").value ? parseInt($("ageYears").value, 10) : null,
+        eventMuteDays: clampMuteDays(muteRaw),
       };
       save();
       renderAll();
